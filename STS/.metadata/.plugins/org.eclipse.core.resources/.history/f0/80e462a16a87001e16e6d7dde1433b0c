@@ -1,0 +1,71 @@
+package com.ihub.www.utility;
+
+import java.awt.Color;
+import java.util.List;
+
+import com.ihub.www.entity.BankAccountTransaction;
+import com.lowagie.text.Document;
+import com.lowagie.text.DocumentException;
+import com.lowagie.text.Font;
+import com.lowagie.text.FontFactory;
+import com.lowagie.text.Phrase;
+import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPTable;
+
+import io.jsonwebtoken.io.IOException;
+import jakarta.servlet.http.HttpServletResponse;
+
+public class BankStatementDownloader {
+	
+//	BankAccount bankAccount= new BankAccount() ;
+	private List<BankAccountTransaction> transactions;
+	private String startDate;
+	private String endDate;
+	public BankStatementDownloader(List<BankAccountTransaction> transactions,String startDate,String endDate) {
+		
+		this.transactions=transactions;
+		this.startDate=startDate;
+		this.endDate=endDate;
+		
+	   }
+	private void WritetableHeader(PdfPTable table) {
+		PdfPCell cell=new PdfPCell();
+		cell.setBackgroundColor(new Color(12,23,34));
+		cell.setPadding(5);
+		Font font=FontFactory.getFont(FontFactory.HELVETICA);
+		font.setColor(new Color(23,45,34));
+		cell.setPhrase(new Phrase("Transaction Id",font));
+		table.addCell(cell);
+		cell.setPhrase(new Phrase("Transaction Type",font));
+		table.addCell(cell);
+		cell.setPhrase(new Phrase("Amount",font));
+		table.addCell(cell);
+		cell.setPhrase(new Phrase("Narration",font));
+		table.addCell(cell);
+		cell.setPhrase(new Phrase("Beneficiary Account",font));
+		table.addCell(cell);
+		cell.setPhrase(new Phrase("Transaction Time",font));
+		table.addCell(cell);
+		}
+	private void WriteTableData(PdfPTable table) {
+		for (BankAccountTransaction transaction:transactions) {
+			
+			table.addCell(transaction.getTransactionId());
+			table.addCell(transaction.getType());
+			table.addCell(String.valueOf(transaction.getAmount()));
+			//Beneficiary or Destination both are same
+			table.addCell(transaction.getDestinationBankAccount()!=null ? transaction.getDestinationBankAccount().getNumber() : "--");
+			table.addCell(transaction.getNarration());
+			table.addCell(DateTimeUtils.getLocalDateTimeFromEpochTime(transaction.getTransactionTime()));
+			
+			
+		}
+	}
+	
+	public void export (HttpServletResponse response) throws DocumentException,IOException{
+		Document document=new Document();
+	}
+	
+	
+	
+}

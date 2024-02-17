@@ -1,0 +1,321 @@
+package com.ihub.www.resource;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
+
+import com.ihub.www.dto.BankAccountResponseDto;
+import com.ihub.www.dto.BankAccountStatusUpdateRequestDto;
+import com.ihub.www.dto.CommonApiResponse;
+import com.ihub.www.dto.RegisterBankRequestDto;
+import com.ihub.www.entity.Bank;
+import com.ihub.www.entity.User;
+import com.ihub.www.service.BankAccountService;
+import com.ihub.www.service.BankService;
+import com.ihub.www.service.UserService;
+
+@Component
+public class BankResource {
+	
+	private final Logger LOG = LoggerFactory.getLogger(BankResource.class);
+	@Autowired
+	
+
+	private BankAccountService bankAccountService;
+	
+	@Autowired
+	private BankService bankService;
+	
+	@Autowired
+	private UserService userService;
+	private BigDecimal banks;
+	private String bankName;
+	
+	public ResponseEntity<CommonApiResponse> registerBank(RegisterBankRequestDto request) {
+
+		LOG.info("Received request for register bank ");
+
+		CommonApiResponse response = new CommonApiResponse();
+
+		if (request == null) {
+			response.setResponseMessage("bad request, missing data");
+			response.setSuccess(true);
+
+			return new ResponseEntity<CommonApiResponse>(response, HttpStatus.BAD_REQUEST);
+		}
+		
+		if(request.getUserId() == 0) {
+			response.setResponseMessage("bad request, user id is null");
+			response.setSuccess(true);
+
+			return new ResponseEntity<CommonApiResponse>(response, HttpStatus.BAD_REQUEST);
+		}
+		
+        if(request.getId() == 0) {
+			response.setResponseMessage("bad request, bank id is null");
+			response.setSuccess(true);
+
+			return new ResponseEntity<CommonApiResponse>(response, HttpStatus.BAD_REQUEST);
+		}
+        Bank banks = RegisterBankRequestDto.toBankEntity(request);
+        
+        User user = this.userService.getUserById(request.getUserId());
+        banks.setUser(user);
+        
+        Bank bank = this.bankService.getBankById(request.getId());
+        banks.setBank(bank);
+        
+        banks.setStatus(BankStatus.OPEN.value());
+        banks.setCreationDate(String.valueOf(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()));
+        banks.setBalance(BigDecimal.ZERO);
+        
+        Bank registeredBank = this.bankService.registerBank(banks);
+        
+        if(registeredBank != null) {
+        	
+        	user.setIsBankLinked(IsBankLinked.YES.value());
+        	this.userService.updateUser(user);
+        	
+			response.setResponseMessage("Bank Registered Successfully!!!");
+			response.setSuccess(true);
+
+			return new ResponseEntity<CommonApiResponse>(response, HttpStatus.OK);    	 
+        } else {
+			response.setResponseMessage("Failed to register bank");
+			response.setSuccess(true);
+
+			return new ResponseEntity<CommonApiResponse>(response, HttpStatus.BAD_REQUEST);
+        }
+
+	}
+	
+	
+	
+       public ResponseEntity<BankAccountResponseDto> fetchAllBanks() { 
+		
+		LOG.info("Received request for fetching all the banks");
+
+		BankAccountResponseDto response = new BankAccountResponseDto();
+		
+		List<Bank> banks = new ArrayList<>();
+		
+		banks = this.bankService.getAllBank();
+		
+		response.setBanks(banks);
+		response.setResponseMessage("Banks Fetch Successfully!!!");
+		response.setSuccess(true);
+
+		return new ResponseEntity<BankAccountResponseDto>(response, HttpStatus.OK);    	 
+   
+	}
+       
+       
+       
+       
+       
+       
+       
+       
+       public ResponseEntity<BankAccountResponseDto> fetchBankByBank(int bankId) { 
+   		
+   		LOG.info("Received request for fetching all the bank  from bank side");
+
+   		BankAccountResponseDto response = new BankAccountResponseDto();
+   		
+   		List<Bank> bank = new ArrayList<>();
+   		
+   		if(bankId == 0) {
+   			response.setResponseMessage("bad request, bank id is missing");
+   			response.setSuccess(true);
+
+   			return new ResponseEntity<BankAccountResponseDto>(response, HttpStatus.BAD_REQUEST);	
+   		}
+   		
+           bank = this.bankService.getByBank(bankId);
+   		
+   		response.setBank(bank);
+   		response.setResponseMessage("Banks Fetch Successfully!!!");
+   		response.setSuccess(true);
+
+   		return new ResponseEntity<BankAccountResponseDto>(response, HttpStatus.OK);    	 
+      
+   	}
+       
+       public ResponseEntity<BankAccountResponseDto> fetchBankById(int bankId) { 
+   		
+   		LOG.info("Received request for fetching bank by using account Id");
+
+   		BankAccountResponseDto response = new BankAccountResponseDto();
+   		
+   		List<Bank> bank = new ArrayList<>();
+   		
+   		if(bankId == 0) {
+   			response.setResponseMessage("bad request, bank id is missing");
+   			response.setSuccess(true);
+
+   			return new ResponseEntity<BankAccountResponseDto>(response, HttpStatus.BAD_REQUEST);	
+   		}
+   		
+   		Bank bank = this.bankService.getBankById(bankId);
+   		
+   		if(bank == null) {
+   			response.setAccount(bank);
+   			response.setResponseMessage("Bank  not found with this bank id");
+   			response.setSuccess(true);
+   			return new ResponseEntity<BankAccountResponseDto>(response, HttpStatus.BAD_REQUEST);
+   		}
+   		
+   		bank.add(bank);
+
+   		response.setbanks(bank);
+   		response.setResponseMessage("Banks Fetch Successfully!!!");
+   		response.setSuccess(true);
+
+   		return new ResponseEntity<BankAccountResponseDto>(response, HttpStatus.OK);    	 
+      
+   	}
+       
+       
+       
+       
+       
+       
+
+       
+       public ResponseEntity<BankAccountResponseDto> fetchBankByUserId(int userId) { 
+   		
+   		LOG.info("Received request for fetching bank by using User Id");
+
+   		BankAccountResponseDto response = new BankAccountResponseDto();
+   		
+   		List<Bank> accounts = new ArrayList<>();
+   		
+   		if(userId == 0) {
+   			response.setResponseMessage("bad request, user id is missing");
+   			response.setSuccess(true);
+
+   			return new ResponseEntity<BankAccountResponseDto>(response, HttpStatus.BAD_REQUEST);	
+   		}
+   		
+   		Bank account = this.bankService.getBankById(userId);
+   		
+   		if(account == null) {
+   			response.setResponseMessage("No Bank  found for User");
+   			response.setSuccess(true);
+   			return new ResponseEntity<BankAccountResponseDto>(response, HttpStatus.BAD_REQUEST);
+   		}
+   		
+   		banks.add(banks);
+
+   		response.setBanks(banks);
+   		response.setResponseMessage("Banks Fetch Successfully!!!");
+   		response.setSuccess(true);
+
+   		return new ResponseEntity<BankAccountResponseDto>(response, HttpStatus.OK);    	 
+      
+   	}
+       
+       public ResponseEntity<BankAccountResponseDto> searchBanks(String banksName, int bankId) { 
+   		
+   		LOG.info("Received request for searching the Banks from Bank side");
+
+   		BankAccountResponseDto response = new BankAccountResponseDto();
+   		
+   		List<Bank> banks = new ArrayList<>();
+   		
+   		if(bankId == 0 || banksName == null) {
+   			response.setResponseMessage("bad request, missing data");
+   			response.setSuccess(true);
+
+   			return new ResponseEntity<BankAccountResponseDto>(response, HttpStatus.BAD_REQUEST);	
+   		}
+   		
+   		banks = this.bankService.getByNumberContainingIgnoreCaseAndBank(bankName, bankId);
+
+   		response.setBanks(banks);
+   		response.setResponseMessage("Banks Fetch Successfully!!!");
+   		response.setSuccess(true);
+
+   		return new ResponseEntity<BankAccountResponseDto>(response, HttpStatus.OK);    	 
+      
+   	}
+
+   	public ResponseEntity<CommonApiResponse> updateBankAccountStatus(BankAccountStatusUpdateRequestDto request) { 
+   		
+   		LOG.info("Received request for updating the Bank ");
+
+   		CommonApiResponse response = new CommonApiResponse();
+   		
+   		if(request == null) {
+   			response.setResponseMessage("bad request, missing data");
+   			response.setSuccess(true);
+
+   			return new ResponseEntity<CommonApiResponse>(response, HttpStatus.BAD_REQUEST);
+   		}
+   		
+   		if(request.getBankId() == 0) {
+   			response.setResponseMessage("bad request, bank id is missing");
+   			response.setSuccess(true);
+
+   			return new ResponseEntity<CommonApiResponse>(response, HttpStatus.BAD_REQUEST);
+   		}
+   		
+   		
+   		
+   		Bank bank = null;
+   		bank = this.bankService.getBankById(request.getBankId());
+   		
+           bank.setStatus(request.getStatus());
+           
+           Bank updateBank = this.bankService.updateBank(bank);
+   		
+           if(updateBank != null) {
+           	response.setResponseMessage("Bank "+request.getStatus()+" Successfully!!!");
+       		response.setSuccess(true);
+       		return new ResponseEntity<CommonApiResponse>(response, HttpStatus.OK);
+           } else {
+           	response.setResponseMessage("Failed to "+request.getStatus() +" the bank");
+       		response.setSuccess(true);
+       		return new ResponseEntity<CommonApiResponse>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+           }
+           
+   	}
+
+   	public ResponseEntity<BankAccountResponseDto> searchBanks(String bankName) { 
+   		
+   		LOG.info("Received request for searching the Bank  from Admin side");
+
+   		BankAccountResponseDto response = new BankAccountResponseDto();
+   		
+   		List<Bank> banks = new ArrayList<>();
+   		
+   		if(bankName == null) {
+   			response.setResponseMessage("bad request, missing data");
+   			response.setSuccess(true);
+
+   			return new ResponseEntity<BankAccountResponseDto>(response, HttpStatus.BAD_REQUEST);	
+   		}
+   		
+   		banks = this.bankService.getByNumberContainingIgnoreCase(bankName);
+
+   		response.setBanks(banks);
+   		response.setResponseMessage("Banks Fetch Successfully!!!");
+   		response.setSuccess(true);
+
+   		return new ResponseEntity<BankAccountResponseDto>(response, HttpStatus.OK);    	 
+      
+   	}
+
+   }
+
+	
+	
